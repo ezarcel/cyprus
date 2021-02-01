@@ -1,4 +1,6 @@
 import type {} from './globals.d.ts'
+import * as p from 'https://deno.land/std@0.85.0/path/mod.ts';
+import { Status } from "https://deno.land/std@0.83.0/http/http_status.ts";
 
 /**
  * ***Use this with* `app.use`**  
@@ -18,4 +20,30 @@ export const log: RequestHandlerFunction = (req, res, next) => {
 
 	console.log(`(${hours}:${minutes}:${seconds}) ${_ip} ${method} ${req.url}`)
 	next()
+}
+
+/**
+ * ***Use this with* `app.use`**  
+ * A middleware function to quickly create a static web server
+ */
+export const staticFiles = (path: string): RequestHandlerFunction => {
+	const exists = (path: string): boolean => {
+		try {
+			Deno.statSync(path)
+			return true
+		} catch {
+			return false
+		}
+	}
+	if (exists(path))
+		return (req, res, next) => {
+			const filePath = p.join(path, req.url)
+			if (req.method === 'GET' && exists(filePath)) {
+				res.status(Status.OK)
+				res.sendFile(filePath)
+			}
+			else next()
+		}
+	else
+		throw new Error(`${path} does NOT exist`)
 }
